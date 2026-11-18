@@ -30,11 +30,24 @@
 | TRAP-16 | 真实边界输入 | 朴素处理会错分 | 保留证据并稳定裁决 | `app/modules/m3_fields/core.py` | `tests/test_m3_fields.py::test_trap_2` |
 | TRAP-18 | 真实边界输入 | 朴素处理会错分 | 保留证据并稳定裁决 | `app/modules/m4_content/core.py` | `tests/test_m4_content.py::test_trap_2` |
 
+## 编码核定流程（M1/M2）
+
+- 试读（`/api/intake/trial`、`/api/encoding/trial`）只提供候选与 `trial_archive_ids`；
+  `archive_ids`/`formal_archive_ids` 恒为 `null`，不会被下游当成正式编号。
+- 核定（`/api/intake/confirm`、`/api/encoding/confirm`）选定编码后，文件采信随核定在同一次
+  提交流程中重算并发布新 `adoption_id`；改判会先把旧采信标 `STALE`，再原子发布新结果。
+- 核定与采信状态存于 `sources` / `confirmations` / `adoptions` 三张表（`app/adoption.py`），
+  `seq` 即代次，同一来源同一代次只有一份正式结果。
+- 下游（M3/M5/M6）只接受同一次 `adoption_id` 的行与值；`STALE`/`RECOMPUTING`/试读输入分别
+  返回 `STALE_VERSION` / `TRIAL_NOT_FORMAL` / `MIXED_ADOPTION`。
+- 重试同一次核定（来源摘要 + 编码 + 规则版本不变）复用原 `adoption_id`，不新增正式行。
+
         ## 对账规则
 
         - 输入记录数 = 有效记录数 + 隔离记录数 + 空记录数。
         - 核心数值或事件数在转换、判定和导出之间保持守恒。
         - 同一输入摘要重跑复用原运行编号，不增加结果行。
+        - 有核定尚未完成重算时，批次导出拒绝执行，避免新旧字段混用。
 
         ## 已知不覆盖
 

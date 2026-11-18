@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from .adoption import AdoptionStore
 from .config import Settings
 from .errors import install
 from .store import Store
@@ -16,6 +17,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="历史档案混合编码归一与索引保形", version=settings.rule_version)
     app.state.settings = settings
     app.state.store = Store(settings.db_path)
+    app.state.adoptions = AdoptionStore(settings.db_path, settings.rule_version)
     app.state.templates = web.templates
     app.mount("/static", StaticFiles(directory=str(web.BASE / "static")), name="static")
     for module in (m1_handler, m2_handler, m3_handler, m4_handler, m5_handler, m6_handler,):

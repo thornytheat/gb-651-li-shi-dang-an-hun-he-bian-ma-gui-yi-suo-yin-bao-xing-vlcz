@@ -1,4 +1,5 @@
 from . import core
 
-def execute(payload: dict | None = None) -> dict:
-    return core.run(payload or core.SAMPLE)
+
+def execute(payload: dict | None = None, store=None) -> dict:
+    return core.run(payload, store=store)
